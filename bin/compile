@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+BUILD_DIR=$1
+ENV_DIR=$3
+
+# See https://devcenter.heroku.com/articles/buildpack-api#buildpack-api
+indent() {
+  sed -u 's/^/       /'
+}
+
+export_env_dir() {
+  env_dir=$1
+  whitelist_regex=${2:-''}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in "$env_dir"/*; do
+      var=$(echo "$e" | rev | cut -d/ -f1 | rev)
+      echo "$var" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$var=$(cat "$e")"
+      :
+    done
+  fi
+}
+
+log() {
+    echo "-----> $1"
+}
+
+if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/reports ]]; then
+  export_env_dir "$ENV_DIR" STATIC_URL
+
+  log "Building Reports"
+  cd "$BUILD_DIR/src/air_lms/air_lms/static/reports"
+
+  log "Installing npm dependencies..."
+  npm ci | indent
+
+  log "Bundling production assets..."
+  npm run build | indent
+
+  log "Replacing /static with ${STATIC_URL}..."
+  sed -i -E 's|"/static/|"'"${STATIC_URL}"'|g' build/index.html
+
+  log "Removing node_modules/..."
+  rm -rf node_modules
+else
+  log "$BUILD_DIR/src/air_lms/air_lms/static/reports doesn't exist!"
+fi
