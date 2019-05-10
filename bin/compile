@@ -29,23 +29,36 @@ log() {
     echo "-----> $1"
 }
 
-if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/reports ]]; then
+if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
   export_env_dir "$ENV_DIR" STATIC_URL
 
-  log "Building Reports"
-  cd "$BUILD_DIR/src/air_lms/air_lms/static/reports"
+  log "Building Report Center"
+  cd "$BUILD_DIR/src/air_lms/air_lms/static/report-center"
 
-  log "Installing npm dependencies..."
-  npm ci | indent
+  log "Install pnpm..."
+  npm i -g pnpm | indent
 
-  log "Bundling production assets..."
-  npm run build | indent
+  log "Set pnpm store location..."
+  npm config set store "${BUILD_DIR}/.pnpm-store" | indent
 
-  log "Replacing /static with ${STATIC_URL}..."
-  sed -i -E 's|"/static/|"'"${STATIC_URL}"'|g' build/index.html
+  log "Building Report Center production assets..."
+  CI=true bin/full-build.sh | indent
 
-  log "Removing node_modules/..."
+  log "Prepend asset references with ${STATIC_URL}..."
+  sed -i -E 's|"/report-center/|"'"${STATIC_URL}"'report-center/|g' build/index.html
+
+  log "Clean up node_modules/..."
   rm -rf node_modules
+  for pkg in components icons styles utils
+  do
+    (
+      cd "$BUILD_DIR/src/air_lms/air_lms/static/packages/${pkg}"
+      rm -rf node_modules
+      rm -rf dist
+    )
+  done
+  rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/packages/veelo-scripts/node_modules"
+  rm -rf "${BUILD_DIR}/.pnpm-store"
 else
-  log "$BUILD_DIR/src/air_lms/air_lms/static/reports doesn't exist!"
+  log "$BUILD_DIR/src/air_lms/air_lms/static/report-center doesn't exist!"
 fi
