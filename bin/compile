@@ -31,6 +31,7 @@ log() {
 
 if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
   export_env_dir "$ENV_DIR" STATIC_URL
+  export_env_dir "$ENV_DIR" REACT_APP_GOOGLE_ANALYTICS_ID
 
   log "Building Report Center"
   cd "$BUILD_DIR/src/air_lms/air_lms/static/report-center"
@@ -42,7 +43,7 @@ if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
   npm config set store "${BUILD_DIR}/.pnpm-store" | indent
 
   log "Building Report Center production assets..."
-  CI=true bin/full-build.sh | indent
+  CI=true REACT_APP_GOOGLE_ANALYTICS_ID=${REACT_APP_GOOGLE_ANALYTICS_ID} bin/full-build.sh | indent
 
   log "Prepend asset references with ${STATIC_URL}..."
   sed -i -E 's|"/report-center/|"'"${STATIC_URL}"'report-center/|g' build/index.html
