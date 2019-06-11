@@ -31,9 +31,9 @@ log() {
 
 if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
   export_env_dir "$ENV_DIR" STATIC_URL
-  export_env_dir "$ENV_DIR" REACT_APP_GOOGLE_ANALYTICS_ID
-  export_env_dir "$ENV_DIR" REACT_APP_SENTRY_DSN
-  export_env_dir "$ENV_DIR" REACT_APP_SENTRY_RELEASE_ID
+  export_env_dir "$ENV_DIR" GOOGLE_ANALYTICS_ID
+  export_env_dir "$ENV_DIR" SENTRY_DSN
+  export_env_dir "$ENV_DIR" SENTRY_RELEASE_ID
 
   log "Building Report Center"
   cd "$BUILD_DIR/src/air_lms/air_lms/static/report-center"
@@ -42,13 +42,13 @@ if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
   npm i -g pnpm | indent
 
   log "Set pnpm store location..."
-  npm config set store "${BUILD_DIR}/.pnpm-store" | indent
+  npm config set store "$BUILD_DIR/.pnpm-store" | indent
 
   log "Building Report Center production assets..."
   CI=true \
-    REACT_APP_GOOGLE_ANALYTICS_ID=${REACT_APP_GOOGLE_ANALYTICS_ID} \
-    REACT_APP_SENTRY_DSN=${REACT_APP_SENTRY_DSN} \
-    REACT_APP_SENTRY_RELEASE_ID=${REACT_APP_SENTRY_RELEASE_ID} \
+    REACT_APP_GOOGLE_ANALYTICS_ID=$GOOGLE_ANALYTICS_ID \
+    REACT_APP_SENTRY_PUBLIC_DSN=$(echo "$SENTRY_DSN" | perl -pe 's/:\w+?(?=@)//g') \
+    REACT_APP_SENTRY_RELEASE_ID=$SENTRY_RELEASE_ID \
     bin/full-build.sh | indent
 
   log "Prepend asset references with ${STATIC_URL}..."
@@ -65,7 +65,7 @@ if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
     )
   done
   rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/packages/veelo-scripts/node_modules"
-  rm -rf "${BUILD_DIR}/.pnpm-store"
+  rm -rf "$BUILD_DIR/.pnpm-store"
 else
   log "$BUILD_DIR/src/air_lms/air_lms/static/report-center doesn't exist!"
 fi
