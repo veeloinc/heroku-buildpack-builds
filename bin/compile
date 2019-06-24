@@ -29,43 +29,50 @@ log() {
     echo "-----> $1"
 }
 
-if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/report-center ]]; then
-  export_env_dir "$ENV_DIR" STATIC_URL
-  export_env_dir "$ENV_DIR" GOOGLE_ANALYTICS_ID
-  export_env_dir "$ENV_DIR" SENTRY_DSN
-  export_env_dir "$ENV_DIR" SENTRY_RELEASE_ID
+build() {
+  if [[ -d $BUILD_DIR/src/air_lms/air_lms/static/$1 ]]; then
+    export_env_dir "$ENV_DIR" STATIC_URL
+    export_env_dir "$ENV_DIR" GOOGLE_ANALYTICS_ID
+    export_env_dir "$ENV_DIR" SENTRY_DSN
+    export_env_dir "$ENV_DIR" SENTRY_RELEASE_ID
 
-  log "Building Report Center"
-  cd "$BUILD_DIR/src/air_lms/air_lms/static/report-center"
+    log "Building Report Center"
+    cd "$BUILD_DIR/src/air_lms/air_lms/static/$1"
 
-  log "Install pnpm..."
-  npm i -g pnpm | indent
+    log "Install pnpm..."
+    npm i -g pnpm | indent
 
-  log "Set pnpm store location..."
-  npm config set store "$BUILD_DIR/.pnpm-store" | indent
+    log "Set pnpm store location..."
+    npm config set store "$BUILD_DIR/.pnpm-store" | indent
 
-  log "Building Report Center production assets..."
-  CI=true \
-    REACT_APP_GOOGLE_ANALYTICS_ID=$GOOGLE_ANALYTICS_ID \
-    REACT_APP_SENTRY_PUBLIC_DSN=$(echo "$SENTRY_DSN" | perl -pe 's/:\w+?(?=@)//g') \
-    REACT_APP_SENTRY_RELEASE_ID=$SENTRY_RELEASE_ID \
-    bin/full-build.sh | indent
+    log "Building Report Center production assets..."
+    CI=true \
+      REACT_APP_GOOGLE_ANALYTICS_ID=$GOOGLE_ANALYTICS_ID \
+      REACT_APP_SENTRY_PUBLIC_DSN=$(echo "$SENTRY_DSN" | perl -pe 's/:\w+?(?=@)//g') \
+      REACT_APP_SENTRY_RELEASE_ID=$SENTRY_RELEASE_ID \
+      bin/full-build.sh | indent
 
-  log "Prepend asset references with ${STATIC_URL}..."
-  sed -i -E 's|"/report-center/|"'"${STATIC_URL}"'report-center/|g' build/index.html
+    log "Prepend asset references with ${STATIC_URL}..."
+    sed -i -E 's|"/'"$1"'/|"'"${STATIC_URL}$1"'/|g' build/index.html
 
-  log "Clean up node_modules/..."
-  rm -rf node_modules
-  for pkg in components icons styles utils
-  do
-    (
-      cd "$BUILD_DIR/src/air_lms/air_lms/static/packages/${pkg}"
-      rm -rf node_modules
-      rm -rf dist
-    )
-  done
-  rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/packages/veelo-scripts/node_modules"
-  rm -rf "$BUILD_DIR/.pnpm-store"
-else
-  log "$BUILD_DIR/src/air_lms/air_lms/static/report-center doesn't exist!"
-fi
+    log "Clean up node_modules/..."
+    rm -rf node_modules
+    for pkg in components icons styles utils
+    do
+      (
+        cd "$BUILD_DIR/src/air_lms/air_lms/static/packages/${pkg}"
+        rm -rf node_modules
+        rm -rf dist
+      )
+    done
+    rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/packages/veelo-scripts/node_modules"
+    rm -rf "$BUILD_DIR/.pnpm-store"
+  else
+    log "$BUILD_DIR/src/air_lms/air_lms/static/$1 doesn't exist!"
+  fi
+}
+
+for app in "report-center" "shared-space"
+do
+  (build $app)
+done
