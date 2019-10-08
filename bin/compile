@@ -72,7 +72,7 @@ build() {
   fi
 }
 
-for app in "report-center" "shared-space"
+for app in "report-center"
 do
   (build $app)
 done
