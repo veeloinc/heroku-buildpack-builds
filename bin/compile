@@ -42,6 +42,9 @@ build() {
     log "Install pnpm..."
     npm i -g pnpm | indent
 
+    log "Install PhantomJS globally (workaround)..."
+    npm i -g phantomjs-prebuilt | indent
+
     log "Set pnpm store location..."
     npm config set store-dir "$BUILD_DIR/.pnpm-store" | indent
 
