@@ -69,6 +69,7 @@ build() {
       )
     done
     rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/packages/veelo-scripts/node_modules"
+    rm -rf "$BUILD_DIR/src/air_lms/air_lms/static/node_modules"
     rm -rf "$BUILD_DIR/.pnpm-store"
   else
     log "$BUILD_DIR/src/air_lms/air_lms/static/$1 doesn't exist!"
